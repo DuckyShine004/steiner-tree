@@ -272,7 +272,6 @@ Graph get_steiner_graph(Graph G) {
 
 /**
  * @brief constructs a steiner tree given that the graph edges are bidirectional (undirected).
- * It also works with
  *
  * Input: two space separated integers denoting the number of edges (E-1), where the number
  * of each vertex will be in the range 1 <= x <= E for simplicity, i.e., 1-indexed, and
@@ -283,7 +282,7 @@ Graph get_steiner_graph(Graph G) {
  * The last line contains V separated integers, denoting the vertex number for each of the
  * terminal nodes.
  *
- * @return a steiner tree
+ * @return a steiner tree.
  */
 int main() {
     Graph G;
