@@ -5,6 +5,8 @@
 #include <stack>
 #include <vector>
 
+void print_vector(const std::vector<int> &);
+
 class Graph {
   public:
     int E;
@@ -21,18 +23,21 @@ class Graph {
     void initialise() {
         std::cin >> E >> V;
 
-        for (int i = 0; i < E; i++) {
+        for (int i = 0; i < E - 1; i++) {
             int u;
             int v;
 
             std::cin >> u >> v;
 
-            adjacency_list[u].push_back(v);
-            adjacency_list[v].push_back(u);
+            adjacency_list[u - 1].push_back(v - 1);
+            adjacency_list[v - 1].push_back(u - 1);
         }
+
+        L.resize(V);
 
         for (int &l : L) {
             std::cin >> l;
+            --l;
         }
     }
 
@@ -42,6 +47,13 @@ class Graph {
             adjacency_list[v].push_back(u);
         }
     }
+
+    void output() {
+        for (const auto &[k, v] : adjacency_list) {
+            std::cout << k << ": ";
+            print_vector(v);
+        }
+    }
 };
 
 struct Edge {
@@ -49,23 +61,40 @@ struct Edge {
     int v;
     int d;
 
-    bool operator<(const Edge &other) {
+    bool operator<(const Edge &other) const {
         return d > other.d;
     }
 };
+
+void print_vector(const std::vector<int> &vec) {
+    int n = vec.size();
+
+    std::cout << "[";
+
+    for (int i = 0; i < n; i++) {
+        std::cout << vec[i];
+
+        if (i < n - 1) {
+            std::cout << ", ";
+        }
+    }
+
+    std::cout << "]\n";
+}
 
 std::vector<std::vector<int>> get_distances(const std::vector<int> &L, std::map<int, std::vector<int>> &adjacency_list, int E) {
     std::stack<int> S;
 
     std::vector<std::vector<int>> D(E, std::vector<int>(E, -1));
 
-    for (const int t : L) {
+    for (int t : L) {
         S.push(t);
 
         D[t][t] = 0;
 
         while (!S.empty()) {
             int n = S.size();
+
             for (int i = 0; i < n; i++) {
                 int u = S.top();
                 S.pop();
@@ -89,6 +118,8 @@ std::vector<std::pair<int, int>> get_metric_closure(const std::vector<int> &L, c
     std::vector<bool> visited(E, false);
 
     std::vector<std::pair<int, int>> LE;
+
+    PQ.push(Edge{L[0], L[0], 0});
 
     while (!PQ.empty()) {
         auto [u, p, w] = PQ.top();
@@ -147,11 +178,11 @@ int find_first_node_reverse(std::set<int> &TV, std::vector<int> &path, int n) {
     return -1;
 }
 
-void merge_subpath(std::set<std::pair<int, int>> &TE, std::set<int> &TV, std::vector<int> &path, int l, int r) {
+void merge_subpath(std::set<std::pair<int, int>> &TE, std::set<int> &TV, std::vector<int> &path, int l, int r, int n) {
     while (l < r) {
         TV.insert(path[l]);
 
-        if (l + 1 < r) {
+        if (l + 1 < n) {
             TE.insert(std::make_pair(path[l], path[l + 1]));
         }
 
@@ -163,7 +194,7 @@ void merge_path(std::set<std::pair<int, int>> &TE, std::set<int> &TV, std::vecto
     int n = path.size();
 
     if (n < 2 || TV.empty()) {
-        merge_subpath(TE, TV, path, 0, n);
+        merge_subpath(TE, TV, path, 0, n, n);
 
         return;
     }
@@ -172,32 +203,34 @@ void merge_path(std::set<std::pair<int, int>> &TE, std::set<int> &TV, std::vecto
     int j = find_first_node_reverse(TV, path, n);
 
     if (i != -1) {
-        merge_subpath(TE, TV, path, 0, i);
+        merge_subpath(TE, TV, path, 0, i, n);
     }
 
     if (j != -1) {
-        merge_subpath(TE, TV, path, j, n);
+        merge_subpath(TE, TV, path, j, n, n);
     }
 }
 
 Graph get_steiner_graph(Graph G) {
     Graph T;
 
+    bool found;
+
+    std::set<int> TV;
+
+    std::vector<int> path;
+
+    std::set<std::pair<int, int>> TE;
+
     std::vector<std::vector<int>> D = get_distances(G.L, G.adjacency_list, G.E);
 
     std::vector<std::pair<int, int>> LE = get_metric_closure(G.L, D, G.E);
 
-    std::vector<int> path;
-
-    std::set<int> TV;
-
-    std::set<std::pair<int, int>> TE;
-
-    bool found;
-
     for (auto [a, b] : LE) {
         std::queue<int> Q;
+
         std::map<int, int> parent;
+
         std::vector<bool> visited(G.V, false);
 
         Q.push(a);
@@ -237,10 +270,25 @@ Graph get_steiner_graph(Graph G) {
     return T;
 }
 
-// NOTE: for undirected graph with V-1 bidirectional edges, i.e., E=V-1
+/**
+ * @brief constructs a steiner tree given that the graph edges are bidirectional (undirected).
+ * It also works with
+ *
+ * Input: two space separated integers denoting the number of edges (E-1), where the number
+ * of each vertex will be in the range 1 <= x <= E for simplicity, i.e., 1-indexed, and
+ * the number of terminal nodes (V).
+ *
+ * The next E-1 lines will be two separated integers denoting the edges of the input graph.
+ *
+ * The last line contains V separated integers, denoting the vertex number for each of the
+ * terminal nodes.
+ *
+ * @return a steiner tree
+ */
 int main() {
     Graph G;
     G.initialise();
 
     Graph T = get_steiner_graph(G);
+    T.output();
 }
